@@ -12,20 +12,19 @@ app.use(bodyParser.urlencoded({
     extended: false
 }))
 
-var dbUrl = "**"
+var dbUrl = '**'
 
-var Message = mongoose.model('Message',{
+var Message = mongoose.model('Message', {
     name: String,
     message: String
 })
 
 app.get('/messages', (req, res) => {
-    Message.find({},(err,messages) =>
-    {
+    Message.find({}, (err, messages) => {
         res.send(messages);
     })
 })
-
+//Callback
 // app.post('/messages', (req, res) => {
 //     var message = new Message(req.body)
 //     message.save((err) => {
@@ -36,36 +35,60 @@ app.get('/messages', (req, res) => {
 //         res.sendStatus(200);
 
 //     })
-   
+
 
 // })
 
-app.post('/messages', (req, res) => {
-    var message = new Message(req.body)
-    message.save()
-    .then(() => {
-        console.log('Saved')
-        return Message.findOne({message: 'badword'})
-    })
-    .then((censored) => {
-      if(censored) {
-          console.log('Censored message found',censored)
-          return Message.deleteOne({_id: censored.id})
-      }
-     io.emit('message', req.body)
-     res.sendStatus(200);
-    })
-    .catch((err) => {
-        res.send(500)
-        return console.error(err)
-    })
-})
+//promise
+// app.post('/messages', (req, res) => {
+//     var message = new Message(req.body)
+//     message.save()
+//         .then(() => {
+//             console.log('Saved')
+//             return Message.findOne({
+//                 message: 'badword'
+//             })
+//         })
+//         .then((censored) => {
+//             if (censored) {
+//                 console.log('Censored message found', censored)
+//                 return Message.deleteOne({
+//                     _id: censored.id
+//                 })
+//             }
+//             io.emit('message', req.body)
+//             res.sendStatus(200);
+//         })
+//         .catch((err) => {
+//             res.send(500)
+//             return console.error(err)
+//         })
+// })
 
+//async-await
+
+app.post('/messages', async (req, res) => {
+     var message = new Message(req.body)
+
+     var savedMessage = await message.save()
+     console.log("Saved")
+
+     var censored = await Message.findOne({ message: 'badword' })
+        if (censored)
+           await Message.deleteOne({_id: censored.id })
+        else
+            io.emit('message', req.body)
+         
+        res.sendStatus(200);
+
+})
 io.on('connection', (socket) => {
     console.log('a user connected')
 })
 
-mongoose.connect(dbUrl, {useMongoClient:true},(err) => {
+mongoose.connect(dbUrl, {
+    useMongoClient: true
+}, (err) => {
     console.log('mongo db connection', err)
 })
 
