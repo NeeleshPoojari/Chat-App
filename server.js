@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({
     extended: false
 }))
 
-var dbUrl = '**'
+var dbUrl = "**"
 
 var Message = mongoose.model('Message', {
     name: String,
@@ -68,18 +68,30 @@ app.get('/messages', (req, res) => {
 //async-await
 
 app.post('/messages', async (req, res) => {
-     var message = new Message(req.body)
 
-     var savedMessage = await message.save()
-     console.log("Saved")
+    try {
+        var message = new Message(req.body)
 
-     var censored = await Message.findOne({ message: 'badword' })
+        var savedMessage = await message.save()
+        console.log("Saved")
+    
+        var censored = await Message.findOne({
+            message: 'badword'
+        })
         if (censored)
-           await Message.deleteOne({_id: censored.id })
+            await Message.deleteOne({
+                _id: censored.id
+            })
         else
             io.emit('message', req.body)
-         
+    
         res.sendStatus(200);
+
+    } catch (error) {
+        res.send(500)
+        return console.error(err)
+    }
+  
 
 })
 io.on('connection', (socket) => {
